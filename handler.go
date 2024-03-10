@@ -16,12 +16,13 @@ type Option struct {
 	// log level (default: debug)
 	Level slog.Leveler
 
-	// Kafka Writer
-	DB       *sql.DB
+	// ClickHouse Connection
+	DB *sql.DB
+	// ClickHouse Log Table
 	LogTable string
 	Timeout  time.Duration // default: 60s
 
-	// optional: customize Kafka event builder
+	// optional: customize clickhouse event builder
 	Converter Converter
 
 	// optional: see slog.HandlerOptions
@@ -103,7 +104,7 @@ func (h *ClickHouseHandler) saveToDB(timestamp time.Time, record slog.Record, pa
 		return err
 	}
 
-	_, err = h.option.DB.Exec(sql, timestamp, level, message, values)
+	_, err = h.option.DB.Exec(sql, timestamp, level, message, string(values))
 
 	return err
 }

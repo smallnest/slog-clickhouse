@@ -1,11 +1,10 @@
 module github.com/smallnest/slog-clickhouse
 
-go 1.22.0
+go 1.21.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.20.0
 	github.com/samber/slog-common v0.15.0
-	github.com/segmentio/kafka-go v0.4.47
 )
 
 require (
