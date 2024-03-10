@@ -1,2 +1,4 @@
 # slog-clickhouse
-slog: clickhouse handler
+A ClickHouse Handler for slog Go library.
+
+developing...
