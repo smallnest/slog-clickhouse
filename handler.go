@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"os"
 	"time"
 
 	"log/slog"
@@ -13,6 +14,9 @@ import (
 )
 
 type Option struct {
+	// Hostname, optional: os.Hostname() will be used if not set
+	Hostname string
+
 	// log level (default: debug)
 	Level slog.Leveler
 
@@ -31,6 +35,14 @@ type Option struct {
 }
 
 func (o Option) NewClickHouseHandler() slog.Handler {
+	if o.Hostname == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			panic("missing hostname")
+		}
+		o.Hostname = hostname
+	}
+
 	if o.Level == nil {
 		o.Level = slog.LevelDebug
 	}
@@ -96,7 +108,7 @@ func (h *ClickHouseHandler) saveToDB(timestamp time.Time, record slog.Record, pa
 	level := record.Level.String()
 	message := record.Message
 
-	sql := `INSERT INTO ` + h.option.LogTable + ` (timestamp, level, message, attrs) VALUES (?, ?, ?, ?)`
+	sql := `INSERT INTO ` + h.option.LogTable + ` (timestamp, hostname, level, message, attrs) VALUES (?, ?, ?, ?, ?)`
 
 	// 使用clickhpouse-go插入数据
 	values, err := json.Marshal(payload)
@@ -104,7 +116,7 @@ func (h *ClickHouseHandler) saveToDB(timestamp time.Time, record slog.Record, pa
 		return err
 	}
 
-	_, err = h.option.DB.Exec(sql, timestamp, level, message, string(values))
+	_, err = h.option.DB.Exec(sql, timestamp, h.option.Hostname, level, message, string(values))
 
 	return err
 }
