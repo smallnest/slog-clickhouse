@@ -2,15 +2,17 @@ package slogclickhouse
 
 import (
 	"log/slog"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	slogmulti "github.com/samber/slog-multi"
 )
 
 func TestClickHouseHandler(t *testing.T) {
 	conn := clickhouse.OpenDB(&clickhouse.Options{
-		Addr: []string{"127.0.0.1:9000"},
+		Addr: []string{"localhost:9000"},
 		Auth: clickhouse.Auth{
 			Database: "myapp",
 			Username: "",
@@ -34,7 +36,14 @@ func TestClickHouseHandler(t *testing.T) {
 	conn.SetMaxOpenConns(10)
 	conn.SetConnMaxLifetime(time.Hour)
 
-	logger := slog.New(Option{Level: slog.LevelDebug, DB: conn, LogTable: "myapp.logs"}.NewClickHouseHandler())
+	chHandler := Option{Level: slog.LevelWarn, DB: conn, LogTable: "myapp.logs"}.NewClickHouseHandler()
 
-	logger.Info("Hello, ClickHouse!", "key1", "value1", "key2", 2)
+	handler := slogmulti.Fanout(
+		chHandler, // pass to first handler: save warn and error logs to clickhouse
+		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}), // then to second handler: print all info and above logs to stdout
+	)
+
+	logger := slog.New(handler)
+
+	logger.Error("Hello, ClickHouse!", "key1", "value1", "key2", 2)
 }
